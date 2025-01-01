@@ -102,7 +102,7 @@ lisp-dev-env/
    make run
    ```
    This builds and runs the `hunchentoot_app` container, exposing port **8080**.  
-   - Open [http://localhost:8080](http://localhost:8080) to see “Hello from Hunchentoot on port 8080!”
+   - Open [http://localhost:8084](http://localhost:8084) to see “Hello from Hunchentoot on port 8080!”
 
 8. **Stop** everything:
    ```bash

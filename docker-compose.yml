@@ -1,32 +1,25 @@
+version: "3.8"
+
 services:
-  todo-app:
-    build: .
-    container_name: cl-todo-app
-    # Our Lisp server listens on 8081 inside the container
-    ports:
-      - "8081:8081"
-
-  ngrok:
-    # This image runs ngrok; choose either 'ngrok/ngrok' or 'wernight/ngrok'
-    image: ngrok/ngrok
-    container_name: ngrok
-    depends_on:
-      - todo-app
-    # Forward public traffic -> todo-app:8081
-    command: http todo-app:8081
-    environment:
-      # Provide your ngrok authtoken (sign up at https://ngrok.com/)
-      # to get stable tunnels and avoid connection limits.
-      NGROK_AUTHTOKEN: "2YbhRAkB70C4nzbLimUKhBPWEQ8_7bTMz3pkCTTCDALikRFCJ"
-    # Expose ngrok's internal monitoring/status page at localhost:4040
-    ports:
-      - "4040:4040"
-
-  doom-emacs:
+  # Development environment container
+  dev_env:
     build:
-      context: .
-    container_name: doom-emacs
+      context: ./dev_env
+    container_name: dev_env_lisp
+    # Mount your local user’s ~/.gitconfig as read-only,
+    # plus the entire project directory for code editing.
     volumes:
-      - ./config:/home/emacsuser/.doom.d
-      - ./data:/home/emacsuser/.emacs.d
+      - ~/.gitconfig:/home/devuser/.gitconfig:ro
+      - ./:/workspace
+    working_dir: /workspace
+    # Run as the same user/group as your host to avoid permission issues
+    user: "${UID}:${GID}"
     tty: true
+
+  # Hunchentoot app container
+  hunchentoot_app:
+    build:
+      context: ./hunchentoot_app
+    container_name: hunchentoot_app
+    ports:
+      - "8084:8084"

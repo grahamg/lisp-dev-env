@@ -1,83 +1,121 @@
-Lisp WebApp Starter (Hunchentoot)
+# lisp-dev-env
 
-A minimal Common Lisp (CL) web application using Hunchentoot. This repository includes Dockerfiles to run the app in a container with Quicklisp installed.
+This repository demonstrates a multi-container setup for building and running a **Hunchentoot** web application in Common Lisp (SBCL). It also includes:
 
-Features
-	•	Hunchentoot web server: Serves HTTP on port 8081.
-	•	Todo List Example: Add, view, and manage tasks in memory.
-	•	Docker Integration: Quickly spin up the app using Docker or Docker Compose.
-	•	Quicklisp Setup: Automatically installed into the image for easy library management.
+- **dev_env**: An Ubuntu-based container with SBCL, Quicklisp, **Doom Emacs**, and SLIME for development.
+- **hunchentoot_app**: A container that runs the Hunchentoot app on port **8080**.
+- A **Makefile** for convenient commands (building, running, attaching Emacs, etc.).
+- A **docker-compose.yml** for orchestrating both containers, and optionally mounting your `.gitconfig` for a smoother dev workflow.
 
-Requirements
-	•	Docker (if you’re using the Docker approach)
-	•	SBCL and Quicklisp (if running locally without Docker)
+---
 
-Getting Started
+## Directory Structure
 
-1. Clone the Repo
+```
+lisp-dev-env/
+├── docker-compose.yml
+├── dev_env/
+│   └── Dockerfile
+├── hunchentoot_app/
+│   ├── app.lisp
+│   └── Dockerfile
+├── Makefile
+├── .gitignore
+└── README.md
+```
 
-git clone https://github.com/grahamg/lisp-webapp-starter.git
-cd lisp-webapp-starter
+### Files
 
-2. Build & Run with Docker Compose
+1. **docker-compose.yml**  
+   - Defines the `dev_env` (for development) and `hunchentoot_app` (for running the server).
+   - Mounts your local `.gitconfig` and the project folder into the dev container.
 
-docker-compose up --build
+2. **dev_env/Dockerfile**  
+   - Installs SBCL, Quicklisp, SLIME, **Doom Emacs**, plus various build tools.
+   - Creates a non-root user (`devuser`) for better security.
+   - Sets up a minimal Doom Emacs config that loads SLIME with SBCL.
 
-	•	The server should be accessible at http://localhost:8080.
-	•	By default, Docker exposes port 8080 to the host. If you need a different port, edit the docker-compose.yml.
+3. **hunchentoot_app/Dockerfile**  
+   - Installs SBCL and Quicklisp.
+   - Preloads Hunchentoot.
+   - Copies `app.lisp` and starts the server on port **8084**.
 
-3. Local Development (Optional)
+4. **hunchentoot_app/app.lisp**  
+   - Minimal Hunchentoot server that responds with “Hello from Hunchentoot…” on any route.
 
-If you prefer running locally:
-	1.	Ensure SBCL + Quicklisp are installed.
-	2.	Load app.lisp in SBCL:
+5. **Makefile**  
+   - Common targets: `build`, `up`, `down`, `shell`, `run`, and `emacs`.
+   - `make emacs` attaches to Doom Emacs running inside the dev_env container in terminal mode.
 
-sbcl --load app.lisp --eval '(todo-app:start-todo-app)'
+6. **.gitignore**  
+   - Ignores common Lisp artifacts (`*.fasl`, etc.), Quicklisp caches, Emacs backups, Docker ephemeral files.
 
+---
 
-	3.	Navigate to http://localhost:8081.
+## Quick Start
 
-	Note: If you run locally, be sure you have loaded (ql:quickload :hunchentoot) or included it in your setup.
+1. **Clone** or create this repo and `cd` into it:
+   ```bash
+   git clone https://github.com/grahamg/lisp-dev-env <project-name>
+   cd <project-name>
+   ```
 
-Project Structure
+2. **(Optional) Export your UID/GID** so the dev container runs as your local user:
+   ```bash
+   export UID=$(id -u)
+   export GID=$(id -g)
+   ```
+   This step helps avoid file-permission issues.
 
-.
-├── app.lisp             ; The main Lisp application code
-├── docker-compose.yml   ; Docker Compose config
-├── Dockerfile           ; Docker build instructions
-├── .gitignore           ; Common Lisp & Docker ignore rules
-├── README.md            ; This file
-└── ...
+3. **Build everything**:
+   ```bash
+   make build
+   ```
+   This runs `docker-compose build` for both the dev environment and the Hunchentoot app.
 
-	•	app.lisp: Defines the routes (handlers) and server startup.
-	•	Dockerfile: Builds the container using Debian or another base with SBCL + Quicklisp.
-	•	docker-compose.yml: Simplifies multi-container orchestration or easy building/running.
-	•	.gitignore: Excludes compiled Lisp files, Quicklisp, editor backups, etc.
+4. **Spin up** the dev environment:
+   ```bash
+   make up
+   ```
+   This starts `dev_env` in the background. It also volume-mounts your `.gitconfig` and current directory if specified in `docker-compose.yml`.
 
-Usage
-	1.	Add Task: Type a new task in the text box, then click “Add Task.”
-	2.	View Tasks: All current tasks display as a list of <li> items.
-	3.	Data Persistence: Currently, tasks are in-memory only. If you restart the server, you lose them. Adapt the code to store tasks in a database or file as needed.
+5. **Attach** to the dev environment shell:
+   ```bash
+   make shell
+   ```
+   You’re now inside the container as `devuser`. You can run commands like:
+   ```bash
+   sbcl
+   doom emacs
+   git ...
+   ```
 
-Customizing
-	•	Routes: Add new routes using (define-easy-handler (my-handler :uri "/my-uri") (params) ...).
-	•	Templates: Render dynamic content by adjusting render-todo-list or creating more functions for different pages.
-	•	Port: In app.lisp, edit :port 8080 to change the server port. Also update Docker’s EXPOSE 8080 if needed.
+6. **Open Doom Emacs** directly:
+   ```bash
+   make emacs
+   ```
+   This attaches a **terminal-based** Doom Emacs session (with SLIME configured).  
+   - Once inside Emacs, do `M-x slime` to start a Lisp REPL, or open a `.lisp` file and hack away.
 
-Troubleshooting
-	•	SBCL Exits Immediately: Ensure start-todo-app includes a blocking loop ((loop (sleep 86400))) so the container or process stays alive.
-	•	Dependency Issues: Confirm docker-compose build completes successfully and installs Quicklisp + SBCL without errors.
-	•	Platform Mismatch (ARM vs. AMD64): If you’re on an M1/M2 Mac (ARM), use an ARM-compatible base image or build SBCL from source.
+7. **Run** the Hunchentoot app:
+   ```bash
+   make run
+   ```
+   This builds and runs the `hunchentoot_app` container, exposing port **8080**.  
+   - Open [http://localhost:8080](http://localhost:8080) to see “Hello from Hunchentoot on port 8080!”
 
-Contributing
-	1.	Fork the repo
-	2.	Create a feature branch (git checkout -b my-feature)
-	3.	Commit your changes (git commit -am 'Add my feature')
-	4.	Push to the branch (git push origin my-feature)
-	5.	Open a Pull Request
+8. **Stop** everything:
+   ```bash
+   make down
+   ```
+   This stops and removes the containers and Docker network.
 
-License
+---
 
-This project is distributed under the MIT License. See LICENSE for details (replace with the appropriate license if different).
+## Notes & TODOs
 
-Enjoy hacking on Common Lisp with Hunchentoot! If you have any questions or run into issues, feel free to open an issue or submit a pull request.
+- **SLIME + Doom Emacs**: Already configured by default, pointing to SBCL. For using SLY or custom settings, update `~/.doom.d/config.el` inside the container.
+- **Testing**: For production usage, add tests, integrate CI, or explore staging vs. production configs.
+- **Secrets & Security**: Use Docker secrets or environment variables.
+- **Hunchentoot**: The bundled web application is merely a placeholder. Implement more routes, middlewares, or static file serving as needed.
+

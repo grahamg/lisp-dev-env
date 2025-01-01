@@ -1,0 +1,23 @@
+services:
+  todo-app:
+    build: .
+    container_name: cl-todo-app
+    # Our Lisp server listens on 8081 inside the container
+    ports:
+      - "8081:8081"
+
+  ngrok:
+    # This image runs ngrok; choose either 'ngrok/ngrok' or 'wernight/ngrok'
+    image: ngrok/ngrok
+    container_name: ngrok
+    depends_on:
+      - todo-app
+    # Forward public traffic -> todo-app:8081
+    command: http todo-app:8081
+    environment:
+      # Provide your ngrok authtoken (sign up at https://ngrok.com/)
+      # to get stable tunnels and avoid connection limits.
+      NGROK_AUTHTOKEN: "2YbhRAkB70C4nzbLimUKhBPWEQ8_7bTMz3pkCTTCDALikRFCJ"
+    # Expose ngrok's internal monitoring/status page at localhost:4040
+    ports:
+      - "4040:4040"

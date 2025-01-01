@@ -34,7 +34,7 @@ COPY app.lisp .
 EXPOSE 8084
 
 # 5) Run Hunchentoot on container start
-#    This loads your app code and starts the server on port 8080.
+#    This loads your app code and starts the server on port 8084.
 CMD ["sbcl", \
      "--eval", "(ql:quickload :hunchentoot)", \
      "--eval", "(load \"app.lisp\")", \

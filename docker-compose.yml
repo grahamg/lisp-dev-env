@@ -21,3 +21,12 @@ services:
     # Expose ngrok's internal monitoring/status page at localhost:4040
     ports:
       - "4040:4040"
+
+  doom-emacs:
+    build:
+      context: .
+    container_name: doom-emacs
+    volumes:
+      - ./config:/home/emacsuser/.doom.d
+      - ./data:/home/emacsuser/.emacs.d
+    tty: true
